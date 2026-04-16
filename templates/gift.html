@@ -2,84 +2,81 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>إلى {{ name }} ❤️</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&family=Amiri:wght@700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إلى نبع الحنان ❤️</title>
     <style>
-        body { margin: 0; padding: 0; background: #050005; color: white; overflow: hidden; font-family: 'Cairo', sans-serif; height: 100vh; }
-        #overlay { position: absolute; inset: 0; background: #050005; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
-        .heart-btn { font-size: 70px; animation: pulse 1s infinite; filter: drop-shadow(0 0 20px #ff2b6b); }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
-        #container { position: absolute; top: 10%; width: 100%; text-align: center; opacity: 0; transition: 2s; z-index: 200; pointer-events: none; }
-        .name-title { font-size: 2.8rem; font-weight: 700; color: #ff2b6b; text-shadow: 0 0 20px #ff2b6b; margin: 5px 0; }
-        #lyrics-box { height: 80px; display: flex; align-items: center; justify-content: center; padding: 0 15px; }
-        #lyric-text { font-family: 'Amiri', serif; font-size: 1.6rem; color: #fff; text-shadow: 0 0 10px #ff2b6b; text-align: center; }
-        canvas { position: absolute; bottom: 0; left: 0; z-index: 10; opacity: 0.3; pointer-events: none; }
+        body { margin: 0; background: #050005; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
+        #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        .heart { font-size: 80px; animation: beat 1s infinite; }
+        @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        #status { position: fixed; bottom: 10px; width: 100%; text-align: center; color: #ff2b6b; font-size: 12px; z-index: 2000; }
+        canvas { position: absolute; inset: 0; z-index: 5; opacity: 0.3; }
+        #ui { position: relative; z-index: 10; text-align: center; margin-top: 20%; opacity: 0; transition: 2s; }
     </style>
 </head>
-<body onclick="forcePlay()">
-
-    <audio id="player" preload="auto" loop>
-        <source src="/static/song.mp3" type="audio/mpeg">
-    </audio>
+<body onclick="start()">
 
     <div id="overlay">
-        <div class="heart-btn">❤️</div>
-        <p style="color:#ff2b6b; margin-top: 20px; font-weight: bold;">اضغط بقوة للتشغيل</p>
+        <div class="heart">❤️</div>
+        <p>إضغط لتشغيل المفاجأة</p>
     </div>
 
-    <div id="container">
-        <div class="name-title">{{ name }}</div>
-        <div id="lyrics-box"><div id="lyric-text">...</div></div>
-        <div id="timer" style="margin-top: 20px; font-size: 1.2rem; color: #ff2b6b;"></div>
+    <div id="status">جاري التحميل...</div>
+
+    <div id="ui">
+        <h1 id="nameDisplay" style="font-size: 3rem; color: #ff2b6b;">{{ name }}</h1>
+        <div id="lyrics" style="font-size: 1.5rem; margin-top: 20px;"></div>
     </div>
 
-    <canvas id="treeCanvas"></canvas>
+    <canvas id="canvas"></canvas>
+
+    <audio id="music" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
-        const audio = document.getElementById('player');
-        let started = false;
+        const audio = document.getElementById('music');
+        const status = document.getElementById('status');
+        let isStarted = false;
 
-        function forcePlay() {
-            if (started) return;
-            started = true;
+        // فحص حالة الصوت
+        audio.oncanplaythrough = () => status.innerText = "جاهز للتشغيل";
+        audio.onerror = () => status.innerText = "خطأ: لم يتم العثور على ملف الصوت";
 
-            // محاولة التشغيل "القسري"
-            audio.muted = false;
-            const playPromise = audio.play();
+        function start() {
+            if (isStarted) return;
+            isStarted = true;
 
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    console.log("اشتغل!");
-                }).catch(error => {
-                    console.log("المتصفح يمنع التشغيل: ", error);
-                    // محاولة أخيرة: كتم ثم تشغيل ثم إلغاء كتم
-                    audio.muted = true;
-                    audio.play();
-                    setTimeout(() => { audio.muted = false; }, 500);
-                });
-            }
+            // محاولة التشغيل
+            audio.play().then(() => {
+                status.innerText = "يعمل الآن ✅";
+            }).catch(err => {
+                status.innerText = "فشل الصوت: " + err.message;
+                // محاولة تشغيل صامتة (Force Play)
+                audio.muted = true;
+                audio.play();
+                setTimeout(() => audio.muted = false, 500);
+            });
 
             document.getElementById('overlay').style.display = 'none';
-            document.getElementById('container').style.opacity = '1';
+            document.getElementById('ui').style.opacity = '1';
             
-            initCanvas();
-            drawTree(window.innerWidth / 2, window.innerHeight, window.innerHeight * 0.15, 0, 8);
+            setupCanvas();
+            grow(window.innerWidth/2, window.innerHeight, window.innerHeight*0.15, 0, 8);
         }
 
-        const canvas = document.getElementById('treeCanvas');
-        const ctx = canvas.getContext('2d');
-        function initCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        const cvs = document.getElementById('canvas');
+        const ctx = cvs.getContext('2d');
+        function setupCanvas() {
+            cvs.width = window.innerWidth;
+            cvs.height = window.innerHeight;
         }
 
-        function drawTree(x, y, len, angle, width) {
+        function grow(x, y, len, angle, w) {
             if (len < 5) return;
             ctx.beginPath();
             ctx.strokeStyle = '#ff2b6b';
-            ctx.lineWidth = width;
-            ctx.lineCap = 'round';
+            ctx.lineWidth = w;
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(angle * Math.PI / 180);
@@ -88,13 +85,13 @@
             ctx.stroke();
             ctx.restore();
 
-            const endX = x + Math.sin(angle * Math.PI / 180) * len;
-            const endY = y - Math.cos(angle * Math.PI / 180) * len;
+            const nextX = x + Math.sin(angle * Math.PI / 180) * len;
+            const nextY = y - Math.cos(angle * Math.PI / 180) * len;
 
             setTimeout(() => {
-                drawTree(endX, endY, len * 0.78, angle + 25 + Math.random() * 10, width * 0.7);
-                drawTree(endX, endY, len * 0.78, angle - 25 - Math.random() * 10, width * 0.7);
-            }, 100); 
+                grow(nextX, nextY, len * 0.75, angle + 20, w * 0.7);
+                grow(nextX, nextY, len * 0.75, angle - 20, w * 0.7);
+            }, 150);
         }
     </script>
 </body>
