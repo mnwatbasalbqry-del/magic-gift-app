@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>إلى {{ name }} ❤️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            margin: 0; background: radial-gradient(circle at center, #1a001a 0%, #050005 70%);
+            color: white; overflow: hidden; font-family: 'Cairo', sans-serif; 
+            height: 100vh; width: 100vw; touch-action: manipulation;
+        }
+
+        /* واجهة الدخول */
+        #overlay { 
+            position: absolute; inset: 0; background: radial-gradient(circle at center, #2d002d 0%, #050005 100%); 
+            z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            cursor: pointer; transition: opacity 1s ease; 
+        }
+        .heart-btn { font-size: 80px; animation: pulseStart 1.3s infinite; filter: drop-shadow(0 0 20px #ff2b6b); }
+        @keyframes pulseStart { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+        /* الاسم المتجاوب */
+        #naba-name-animated {
+            position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%);
+            font-size: clamp(2.5rem, 12vw, 5rem); font-weight: 200; color: #ff2b6b; 
+            opacity: 0; z-index: 10; transition: opacity 2s; text-align: center; 
+            width: 90%; text-shadow: 0 0 20px #ff2b6b; pointer-events: none;
+        }
+
+        /* العداد المدمج */
+        #ui { 
+            opacity: 0; position: absolute; top: 8%; width: 100%; 
+            text-align: center; z-index: 20; transition: 2s; 
+        }
+        .timer { 
+            display: flex; gap: 5px; justify-content: center; 
+            margin-bottom: 10px; flex-wrap: wrap; padding: 0 10px;
+        }
+        .box { 
+            background: rgba(255, 43, 107, 0.1); border: 1px solid rgba(255, 43, 107, 0.4); 
+            padding: 8px; border-radius: 12px; min-width: 50px; flex: 1; max-width: 70px;
+        }
+        .num { font-size: 1.1rem; color: #ff2b6b; font-weight: 700; display: block; }
+        .label { font-size: 0.6rem; color: #eee; }
+
+        .poem { font-size: clamp(0.85rem, 3.5vw, 1.1rem); line-height: 1.5; padding: 0 15px; }
+
+        canvas { position: absolute; inset: 0; pointer-events: none; }
+    </style>
+</head>
+<body onclick="startExperience()">
+
+    <audio id="mySong" preload="auto">
+        <source src="https://raw.githubusercontent.com/mnwatbasalbqry-del/naba-project/main/_%D8%AD%D8%B3%D9%8A%D9%86_%D8%A7%D9%84%D8%BA%D8%B2%D8%A7%D9%84%20_%D8%A7%D8%BA%D8%A7%D9%86%D9%8A_%D9%85%D8%B3%D8%B1%D8%B9%D9%87%F0%9F%92%A5%20_fyp%20_%D9%87%D9%88%D8%A7%D8%AC%D9%8A%D8%B3%20_%D8%A7%D8%B9%D8%A7%D8%AF%D8%A9_%D8%A7%D9%84%D9%86%D8%B4%D8%B1%F0%9F%94%83%20(MP3).mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="overlay">
+        <div class="heart-btn">❤️</div>
+        <p style="color:#ff2b6b; margin-top:15px;">إلمس القلب يا عبقري</p>
+    </div>
+
+    <div id="naba-name-animated">{{ name }}</div>
+
+    <div id="ui">
+        <div id="timer" class="timer"></div>
+        <div class="poem">أبيع الدنيا عشانك... ❤️<br>كل ثانية وأنتِ الأغلى</div>
+    </div>
+
+    <canvas id="treeCanvas"></canvas>
+
+    <script>
+        const treeCanvas = document.getElementById('treeCanvas');
+        const treeCtx = treeCanvas.getContext('2d');
+        let started = false;
+        
+        // جلب التاريخ من Flask
+        const targetDate = new Date("{{ date }}");
+
+        function init() {
+            treeCanvas.width = window.innerWidth;
+            treeCanvas.height = window.innerHeight;
+        }
+        window.onresize = init;
+        init();
+
+        function startExperience() {
+            if (started) return;
+            started = true;
+
+            document.getElementById('mySong').play();
+            document.getElementById('overlay').style.opacity = '0';
+            
+            setTimeout(() => {
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('ui').style.opacity = '1';
+                document.getElementById('naba-name-animated').style.opacity = '1';
+                
+                // بدء الشجرة
+                animateBranch(treeCanvas.width / 2, treeCanvas.height - 20, treeCanvas.height * 0.2, 0, 12);
+            }, 1000);
+
+            setInterval(updateTimer, 100);
+        }
+
+        function animateBranch(x, y, len, angle, width) {
+            if (len < 8) {
+                drawFlower(x, y);
+                return;
+            }
+
+            treeCtx.beginPath();
+            treeCtx.strokeStyle = `rgb(${60 + (12-width)*10}, 20, 45)`;
+            treeCtx.lineWidth = width;
+            treeCtx.lineCap = 'round';
+            treeCtx.moveTo(x, y);
+
+            const nextX = x + Math.sin(angle * Math.PI / 180) * len;
+            const nextY = y - Math.cos(angle * Math.PI / 180) * len;
+
+            treeCtx.lineTo(nextX, nextY);
+            treeCtx.stroke();
+
+            setTimeout(() => {
+                animateBranch(nextX, nextY, len * 0.78, angle + (20 + Math.random() * 20), width * 0.7);
+                animateBranch(nextX, nextY, len * 0.78, angle - (20 + Math.random() * 20), width * 0.7);
+            }, 80);
+        }
+
+        function drawFlower(x, y) {
+            treeCtx.fillStyle = "#ff2b6b";
+            treeCtx.shadowBlur = 8;
+            treeCtx.shadowColor = "#ff2b6b";
+            treeCtx.beginPath();
+            treeCtx.arc(x, y, 2 + Math.random() * 3, 0, Math.PI * 2);
+            treeCtx.fill();
+            treeCtx.shadowBlur = 0;
+        }
+
+        function updateTimer() {
+            const diff = new Date() - targetDate;
+            const total = Math.max(0, diff);
+            const d = Math.floor(total / 86400000);
+            const h = Math.floor((total / 3600000) % 24);
+            const m = Math.floor((total / 60000) % 60);
+            const s = Math.floor((total / 1000) % 60);
+            const ms = Math.floor((total % 1000) / 10);
+
+            document.getElementById('timer').innerHTML = `
+                <div class="box"><span class="num">${d}</span><span class="label">يوم</span></div>
+                <div class="box"><span class="num">${h}</span><span class="label">ساعة</span></div>
+                <div class="box"><span class="num">${m}</span><span class="label">دقيقة</span></div>
+                <div class="box"><span class="num">${s}</span><span class="label">ثانية</span></div>
+                <div class="box"><span class="num">${ms}</span><span class="label">نبضة</span></div>
+            `;
+        }
+    </script>
+</body>
+</html>
