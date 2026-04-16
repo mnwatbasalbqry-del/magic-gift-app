@@ -6,63 +6,97 @@
     <title>إلى نبع الحنان ❤️</title>
     <style>
         body { margin: 0; background: #050005; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
-        #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
-        .heart { font-size: 80px; animation: beat 1s infinite; }
-        @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
-        #status { position: fixed; bottom: 10px; width: 100%; text-align: center; color: #ff2b6b; font-size: 12px; z-index: 2000; }
+        
+        /* واجهة البداية */
+        #overlay { 
+            position: absolute; inset: 0; background: #050005; z-index: 1000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; 
+        }
+        .heart { font-size: 80px; animation: beat 1s infinite; filter: drop-shadow(0 0 15px #ff2b6b); }
+        @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+        /* العناصر المرئية */
+        #ui { position: relative; z-index: 10; text-align: center; margin-top: 15%; opacity: 0; transition: 2s; pointer-events: none; }
+        #nameDisplay { font-size: 3.5rem; color: #ff2b6b; text-shadow: 0 0 20px #ff2b6b; margin-bottom: 10px; }
+        #lyrics { font-size: 1.8rem; height: 50px; color: #fff; text-shadow: 0 0 10px #ff2b6b; font-style: italic; }
+        
         canvas { position: absolute; inset: 0; z-index: 5; opacity: 0.3; }
-        #ui { position: relative; z-index: 10; text-align: center; margin-top: 20%; opacity: 0; transition: 2s; }
+        #status { position: fixed; bottom: 10px; width: 100%; text-align: center; color: #444; font-size: 10px; }
     </style>
 </head>
-<body onclick="start()">
+<body onclick="startExperience()">
 
     <div id="overlay">
         <div class="heart">❤️</div>
-        <p>إضغط لتشغيل المفاجأة</p>
+        <p style="color: #ff2b6b; font-weight: bold; margin-top: 20px;">إلمس القلب لبدء المفاجأة</p>
     </div>
 
-    <div id="status">جاري التحميل...</div>
-
     <div id="ui">
-        <h1 id="nameDisplay" style="font-size: 3rem; color: #ff2b6b;">{{ name }}</h1>
-        <div id="lyrics" style="font-size: 1.5rem; margin-top: 20px;"></div>
+        <h1 id="nameDisplay">{{ name }}</h1>
+        <div id="lyrics"></div>
     </div>
 
     <canvas id="canvas"></canvas>
+    <div id="status">جاري فحص ملف الصوت...</div>
 
-    <audio id="music" loop>
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    <audio id="music" loop preload="auto">
+        <source src="{{ url_for('static', filename='song.mp3') }}" type="audio/mpeg">
     </audio>
 
     <script>
         const audio = document.getElementById('music');
+        const lyricEl = document.getElementById('lyrics');
         const status = document.getElementById('status');
         let isStarted = false;
 
-        // فحص حالة الصوت
-        audio.oncanplaythrough = () => status.innerText = "جاهز للتشغيل";
-        audio.onerror = () => status.innerText = "خطأ: لم يتم العثور على ملف الصوت";
+        // مصفوفة الكلمات المتزامنة (الثانية : النص)
+        const lyricsData = [
+            { t: 0.5, text: "يا ضحكة أيامي.." },
+            { t: 4, text: "يا أغلى من روحي" },
+            { t: 8, text: "نبض القلب صار باسمك" },
+            { t: 12, text: "تنمو السنين بحبك" }
+        ];
 
-        function start() {
+        // معالجة أخطاء التحميل (404)
+        audio.onerror = () => {
+            status.innerText = "خطأ 404: ملف song.mp3 غير موجود في مجلد static";
+            status.style.color = "red";
+        };
+
+        function startExperience() {
             if (isStarted) return;
             isStarted = true;
 
-            // محاولة التشغيل
-            audio.play().then(() => {
-                status.innerText = "يعمل الآن ✅";
-            }).catch(err => {
-                status.innerText = "فشل الصوت: " + err.message;
-                // محاولة تشغيل صامتة (Force Play)
+            // تشغيل الصوت مع خدعة تجاوز حظر المتصفح
+            audio.play().catch(() => {
                 audio.muted = true;
                 audio.play();
-                setTimeout(() => audio.muted = false, 500);
+                setTimeout(() => { audio.muted = false; }, 500);
             });
 
-            document.getElementById('overlay').style.display = 'none';
-            document.getElementById('ui').style.opacity = '1';
+            document.getElementById('overlay').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('ui').style.opacity = '1';
+            }, 1000);
             
             setupCanvas();
+            // بدء نمو الشجرة من الأسفل
             grow(window.innerWidth/2, window.innerHeight, window.innerHeight*0.15, 0, 8);
+            
+            // تحديث الكلمات والعداد
+            setInterval(updateLyrics, 100);
+        }
+
+        function updateLyrics() {
+            const current = audio.currentTime;
+            const line = lyricsData.find((l, i) => {
+                const next = lyricsData[i+1];
+                return current >= l.t && (!next || current < next.t);
+            });
+            if (line && lyricEl.innerText !== line.text) {
+                lyricEl.innerText = line.text;
+            }
         }
 
         const cvs = document.getElementById('canvas');
@@ -74,9 +108,11 @@
 
         function grow(x, y, len, angle, w) {
             if (len < 5) return;
+            
             ctx.beginPath();
             ctx.strokeStyle = '#ff2b6b';
             ctx.lineWidth = w;
+            ctx.lineCap = 'round';
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(angle * Math.PI / 180);
@@ -89,9 +125,9 @@
             const nextY = y - Math.cos(angle * Math.PI / 180) * len;
 
             setTimeout(() => {
-                grow(nextX, nextY, len * 0.75, angle + 20, w * 0.7);
-                grow(nextX, nextY, len * 0.75, angle - 20, w * 0.7);
-            }, 150);
+                grow(nextX, nextY, len * 0.75, angle + 22 + Math.random()*5, w * 0.7);
+                grow(nextX, nextY, len * 0.75, angle - 22 - Math.random()*5, w * 0.7);
+            }, 150); // سرعة النمو
         }
     </script>
 </body>
