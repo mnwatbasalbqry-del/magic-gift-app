@@ -2,117 +2,122 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إلى نبع الحنان ❤️</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>إلى الغالية ❤️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&family=Amiri:wght@700&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #050005; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
-        
+        body { 
+            margin: 0; padding: 0; background: #050005; 
+            color: white; overflow: hidden; font-family: 'Cairo', sans-serif; height: 100vh; 
+        }
+
         /* واجهة البداية */
         #overlay { 
             position: absolute; inset: 0; background: #050005; z-index: 1000; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; 
         }
-        .heart { font-size: 80px; animation: beat 1s infinite; filter: drop-shadow(0 0 15px #ff2b6b); }
-        @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .heart-icon { font-size: 80px; animation: beat 1s infinite; filter: drop-shadow(0 0 20px #ff2b6b); }
+        @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
 
-        /* العناصر المرئية */
-        #ui { position: relative; z-index: 10; text-align: center; margin-top: 15%; opacity: 0; transition: 2s; pointer-events: none; }
-        #nameDisplay { font-size: 3.5rem; color: #ff2b6b; text-shadow: 0 0 20px #ff2b6b; margin-bottom: 10px; }
-        #lyrics { font-size: 1.8rem; height: 50px; color: #fff; text-shadow: 0 0 10px #ff2b6b; font-style: italic; }
+        /* المحتوى الرئيسي */
+        #main-ui { position: relative; z-index: 200; text-align: center; margin-top: 10vh; opacity: 0; transition: 3s; pointer-events: none; }
         
-        canvas { position: absolute; inset: 0; z-index: 5; opacity: 0.3; }
-        #status { position: fixed; bottom: 10px; width: 100%; text-align: center; color: #444; font-size: 10px; }
+        /* نبض القلب ECG */
+        .ecg-container { width: 100%; display: flex; justify-content: center; margin-bottom: 20px; }
+        .ecg-svg { width: 80%; height: 60px; stroke: #ff2b6b; stroke-width: 3; fill: none; filter: drop-shadow(0 0 8px #ff2b6b); }
+        .pulse-line { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: dash 3s linear infinite; }
+        @keyframes dash { to { stroke-dashoffset: 0; } }
+
+        .name-tag { font-size: 3rem; color: #ff2b6b; text-shadow: 0 0 20px #ff2b6b; margin: 10px 0; }
+        
+        /* صندوق الشعر والكلمات */
+        #lyrics-container { height: 120px; display: flex; align-items: center; justify-content: center; padding: 0 20px; }
+        #lyric-text { font-family: 'Amiri', serif; font-size: 1.8rem; color: #fff; text-shadow: 0 0 15px #ff2b6b; text-align: center; transition: 0.5s; line-height: 1.6; }
+
+        /* الشجرة */
+        canvas { position: absolute; bottom: 0; left: 0; z-index: 10; opacity: 0.3; pointer-events: none; }
+        
+        #status-bar { position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 10px; color: #333; }
     </style>
 </head>
-<body onclick="startExperience()">
+<body onclick="launchExperience()">
 
-    <div id="overlay">
-        <div class="heart">❤️</div>
-        <p style="color: #ff2b6b; font-weight: bold; margin-top: 20px;">إلمس القلب لبدء المفاجأة</p>
-    </div>
-
-    <div id="ui">
-        <h1 id="nameDisplay">{{ name }}</h1>
-        <div id="lyrics"></div>
-    </div>
-
-    <canvas id="canvas"></canvas>
-    <div id="status">جاري فحص ملف الصوت...</div>
-
-    <audio id="music" loop preload="auto">
+    <audio id="bg-music" loop preload="auto">
         <source src="{{ url_for('static', filename='song.mp3') }}" type="audio/mpeg">
     </audio>
 
-    <script>
-        const audio = document.getElementById('music');
-        const lyricEl = document.getElementById('lyrics');
-        const status = document.getElementById('status');
-        let isStarted = false;
+    <div id="overlay">
+        <div class="heart-icon">❤️</div>
+        <p style="color:#ff2b6b; margin-top: 20px; font-weight: bold; letter-spacing: 1px;">إلمس القلب لتشغيل النبض</p>
+    </div>
 
-        // مصفوفة الكلمات المتزامنة (الثانية : النص)
-        const lyricsData = [
-            { t: 0.5, text: "يا ضحكة أيامي.." },
-            { t: 4, text: "يا أغلى من روحي" },
-            { t: 8, text: "نبض القلب صار باسمك" },
-            { t: 12, text: "تنمو السنين بحبك" }
+    <div id="main-ui">
+        <div class="ecg-container">
+            <svg class="ecg-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
+                <path class="pulse-line" d="M0,50 L100,50 L110,20 L120,80 L130,10 L140,90 L150,50 L500,50" />
+            </svg>
+        </div>
+
+        <div class="name-tag">{{ name }}</div>
+        
+        <div id="lyrics-container">
+            <div id="lyric-text">استعد للمفاجأة...</div>
+        </div>
+    </div>
+
+    <canvas id="treeCanvas"></canvas>
+    <div id="status-bar">Flask Static Mode Active</div>
+
+    <script>
+        const audio = document.getElementById('bg-music');
+        const lyricDisplay = document.getElementById('lyric-text');
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+        let active = false;
+
+        // مصفوفة الشعر والكلمات (الوقت بالثواني : النص)
+        const poetry = [
+            { t: 1, text: "يا من سكنتِ الروح وأحييتِ النبض" },
+            { t: 5, text: "أنتِ القصيدةُ.. وأنتِ أغلى ما على الأرض" },
+            { t: 9, text: "شجرتي تنمو بحبكِ يوماً بعد يوم" },
+            { t: 13, text: "يا ضحكةً تمحو من قلبي كل الهموم" }
         ];
 
-        // معالجة أخطاء التحميل (404)
-        audio.onerror = () => {
-            status.innerText = "خطأ 404: ملف song.mp3 غير موجود في مجلد static";
-            status.style.color = "red";
-        };
+        function launchExperience() {
+            if (active) return;
+            active = true;
 
-        function startExperience() {
-            if (isStarted) return;
-            isStarted = true;
-
-            // تشغيل الصوت مع خدعة تجاوز حظر المتصفح
+            // تشغيل الموسيقى
             audio.play().catch(() => {
                 audio.muted = true;
                 audio.play();
                 setTimeout(() => { audio.muted = false; }, 500);
             });
 
+            // إخفاء الواجهة وظهور المحتوى
             document.getElementById('overlay').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('overlay').style.display = 'none';
-                document.getElementById('ui').style.opacity = '1';
+                document.getElementById('main-ui').style.opacity = '1';
             }, 1000);
             
-            setupCanvas();
-            // بدء نمو الشجرة من الأسفل
-            grow(window.innerWidth/2, window.innerHeight, window.innerHeight*0.15, 0, 8);
+            // ضبط الكانفاس وبدء الشجرة
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            growTree(canvas.width / 2, canvas.height, canvas.height * 0.16, 0, 8);
             
-            // تحديث الكلمات والعداد
-            setInterval(updateLyrics, 100);
+            // بدء مزامنة الشعر
+            setInterval(syncPoetry, 100);
         }
 
-        function updateLyrics() {
-            const current = audio.currentTime;
-            const line = lyricsData.find((l, i) => {
-                const next = lyricsData[i+1];
-                return current >= l.t && (!next || current < next.t);
-            });
-            if (line && lyricEl.innerText !== line.text) {
-                lyricEl.innerText = line.text;
-            }
-        }
-
-        const cvs = document.getElementById('canvas');
-        const ctx = cvs.getContext('2d');
-        function setupCanvas() {
-            cvs.width = window.innerWidth;
-            cvs.height = window.innerHeight;
-        }
-
-        function grow(x, y, len, angle, w) {
+        function growTree(x, y, len, angle, width) {
             if (len < 5) return;
-            
+
             ctx.beginPath();
             ctx.strokeStyle = '#ff2b6b';
-            ctx.lineWidth = w;
+            ctx.lineWidth = width;
             ctx.lineCap = 'round';
+            
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(angle * Math.PI / 180);
@@ -125,9 +130,25 @@
             const nextY = y - Math.cos(angle * Math.PI / 180) * len;
 
             setTimeout(() => {
-                grow(nextX, nextY, len * 0.75, angle + 22 + Math.random()*5, w * 0.7);
-                grow(nextX, nextY, len * 0.75, angle - 22 - Math.random()*5, w * 0.7);
-            }, 150); // سرعة النمو
+                growTree(nextX, nextY, len * 0.76, angle + 24 + Math.random() * 8, width * 0.7);
+                growTree(nextX, nextY, len * 0.76, angle - 24 - Math.random() * 8, width * 0.7);
+            }, 180); 
+        }
+
+        function syncPoetry() {
+            const now = audio.currentTime;
+            const currentLine = poetry.find((p, i) => {
+                const next = poetry[i+1];
+                return now >= p.t && (!next || now < next.t);
+            });
+            
+            if (currentLine && lyricDisplay.innerText !== currentLine.text) {
+                lyricDisplay.style.opacity = 0;
+                setTimeout(() => {
+                    lyricDisplay.innerText = currentLine.text;
+                    lyricDisplay.style.opacity = 1;
+                }, 300);
+            }
         }
     </script>
 </body>
