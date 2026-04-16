@@ -20,134 +20,127 @@
         @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
 
         /* المحتوى الرئيسي */
-        #main-ui { position: relative; z-index: 200; text-align: center; margin-top: 10vh; opacity: 0; transition: 3s; pointer-events: none; }
+        #main-ui { position: relative; z-index: 200; text-align: center; margin-top: 8vh; opacity: 0; transition: 3s; pointer-events: none; }
         
         /* نبض القلب ECG */
-        .ecg-container { width: 100%; display: flex; justify-content: center; margin-bottom: 20px; }
-        .ecg-svg { width: 80%; height: 60px; stroke: #ff2b6b; stroke-width: 3; fill: none; filter: drop-shadow(0 0 8px #ff2b6b); }
+        .ecg-svg { width: 85%; height: 60px; stroke: #ff2b6b; stroke-width: 3; fill: none; filter: drop-shadow(0 0 8px #ff2b6b); }
         .pulse-line { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: dash 3s linear infinite; }
         @keyframes dash { to { stroke-dashoffset: 0; } }
 
         .name-tag { font-size: 3rem; color: #ff2b6b; text-shadow: 0 0 20px #ff2b6b; margin: 10px 0; }
         
-        /* صندوق الشعر والكلمات */
-        #lyrics-container { height: 120px; display: flex; align-items: center; justify-content: center; padding: 0 20px; }
-        #lyric-text { font-family: 'Amiri', serif; font-size: 1.8rem; color: #fff; text-shadow: 0 0 15px #ff2b6b; text-align: center; transition: 0.5s; line-height: 1.6; }
+        /* صندوق الشعر */
+        #lyrics-container { height: 100px; display: flex; align-items: center; justify-content: center; padding: 0 20px; }
+        #lyric-text { font-family: 'Amiri', serif; font-size: 1.8rem; color: #fff; text-shadow: 0 0 15px #ff2b6b; text-align: center; transition: 0.5s; }
 
-        /* الشجرة */
-        canvas { position: absolute; bottom: 0; left: 0; z-index: 10; opacity: 0.3; pointer-events: none; }
-        
-        #status-bar { position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 10px; color: #333; }
+        /* الشجرة الباهتة في الخلفية */
+        canvas { position: absolute; bottom: 0; left: 0; z-index: 10; opacity: 0.25; pointer-events: none; }
     </style>
 </head>
-<body onclick="launchExperience()">
+<body onclick="startApp()">
 
-    <audio id="bg-music" loop preload="auto">
+    <audio id="musicPlayer" loop preload="auto">
         <source src="{{ url_for('static', filename='song.mp3') }}" type="audio/mpeg">
     </audio>
 
     <div id="overlay">
         <div class="heart-icon">❤️</div>
-        <p style="color:#ff2b6b; margin-top: 20px; font-weight: bold; letter-spacing: 1px;">إلمس القلب لتشغيل النبض</p>
+        <p style="color:#ff2b6b; margin-top: 20px; font-weight: bold;">إلمس النبض ليبدأ الشعر</p>
     </div>
 
     <div id="main-ui">
-        <div class="ecg-container">
-            <svg class="ecg-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
-                <path class="pulse-line" d="M0,50 L100,50 L110,20 L120,80 L130,10 L140,90 L150,50 L500,50" />
-            </svg>
-        </div>
-
+        <svg class="ecg-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
+            <path class="pulse-line" d="M0,50 L100,50 L110,20 L120,80 L130,10 L140,90 L150,50 L500,50" />
+        </svg>
         <div class="name-tag">{{ name }}</div>
-        
         <div id="lyrics-container">
-            <div id="lyric-text">استعد للمفاجأة...</div>
+            <div id="lyric-text">...</div>
         </div>
     </div>
 
     <canvas id="treeCanvas"></canvas>
-    <div id="status-bar">Flask Static Mode Active</div>
 
     <script>
-        const audio = document.getElementById('bg-music');
-        const lyricDisplay = document.getElementById('lyric-text');
+        const audio = document.getElementById('musicPlayer');
+        const lyricText = document.getElementById('lyric-text');
         const canvas = document.getElementById('treeCanvas');
         const ctx = canvas.getContext('2d');
-        let active = false;
+        let isActive = false;
 
-        // مصفوفة الشعر والكلمات (الوقت بالثواني : النص)
+        // مصفوفة الشعر المتزامنة مع الأغنية
         const poetry = [
-            { t: 1, text: "يا من سكنتِ الروح وأحييتِ النبض" },
-            { t: 5, text: "أنتِ القصيدةُ.. وأنتِ أغلى ما على الأرض" },
-            { t: 9, text: "شجرتي تنمو بحبكِ يوماً بعد يوم" },
-            { t: 13, text: "يا ضحكةً تمحو من قلبي كل الهموم" }
+            { t: 1, text: "يا نبضاً في وريدي.." },
+            { t: 5, text: "يا أجمل أقداري وعيدي" },
+            { t: 9, text: "تنمو روحي بقربكِ دوماً" },
+            { t: 13, text: "كشجرةٍ تزهرُ في كفيّكِ" }
         ];
 
-        function launchExperience() {
-            if (active) return;
-            active = true;
+        function startApp() {
+            if (isActive) return;
+            isActive = true;
 
-            // تشغيل الموسيقى
+            // تشغيل الصوت بقوة وتجاوز حظر المتصفحات
             audio.play().catch(() => {
                 audio.muted = true;
                 audio.play();
                 setTimeout(() => { audio.muted = false; }, 500);
             });
 
-            // إخفاء الواجهة وظهور المحتوى
             document.getElementById('overlay').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('overlay').style.display = 'none';
                 document.getElementById('main-ui').style.opacity = '1';
             }, 1000);
             
-            // ضبط الكانفاس وبدء الشجرة
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            growTree(canvas.width / 2, canvas.height, canvas.height * 0.16, 0, 8);
+
+            // استدعاء دالة النمو المكتوبة بواسطتك
+            drawTree(canvas.width / 2, canvas.height, canvas.height * 0.15, 0, 8);
             
-            // بدء مزامنة الشعر
             setInterval(syncPoetry, 100);
         }
 
-        function growTree(x, y, len, angle, width) {
-            if (len < 5) return;
+        // دالتك المتطورة للنمو التدريجي
+        function drawTree(x, y, len, angle, width) {
+            if (len < 4) return;
 
+            ctx.save();
             ctx.beginPath();
             ctx.strokeStyle = '#ff2b6b';
             ctx.lineWidth = width;
             ctx.lineCap = 'round';
             
-            ctx.save();
             ctx.translate(x, y);
             ctx.rotate(angle * Math.PI / 180);
+            
             ctx.moveTo(0, 0);
             ctx.lineTo(0, -len);
             ctx.stroke();
-            ctx.restore();
 
-            const nextX = x + Math.sin(angle * Math.PI / 180) * len;
-            const nextY = y - Math.cos(angle * Math.PI / 180) * len;
+            // النقطة التي ينتهي عندها الغصن الحالي
+            const nextX = 0; 
+            const nextY = -len;
 
             setTimeout(() => {
-                growTree(nextX, nextY, len * 0.76, angle + 24 + Math.random() * 8, width * 0.7);
-                growTree(nextX, nextY, len * 0.76, angle - 24 - Math.random() * 8, width * 0.7);
-            }, 180); 
+                // رسم الغصون من نقطة النهاية الحالية
+                // لاحظ: نستخدم الحسابات النسبية لأننا استخدمنا translate
+                drawTree(0, -len, len * 0.75, 25 + Math.random() * 5, width * 0.7);
+                drawTree(0, -len, len * 0.75, -25 - Math.random() * 5, width * 0.7);
+            }, 100); 
+
+            ctx.restore();
         }
 
         function syncPoetry() {
-            const now = audio.currentTime;
+            const time = audio.currentTime;
             const currentLine = poetry.find((p, i) => {
                 const next = poetry[i+1];
-                return now >= p.t && (!next || now < next.t);
+                return time >= p.t && (!next || time < next.t);
             });
             
-            if (currentLine && lyricDisplay.innerText !== currentLine.text) {
-                lyricDisplay.style.opacity = 0;
-                setTimeout(() => {
-                    lyricDisplay.innerText = currentLine.text;
-                    lyricDisplay.style.opacity = 1;
-                }, 300);
+            if (currentLine && lyricText.innerText !== currentLine.text) {
+                lyricText.innerText = currentLine.text;
             }
         }
     </script>
