@@ -7,63 +7,55 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;700&display=swap" rel="stylesheet">
     <style>
         body { 
-            margin: 0; padding: 0; background: radial-gradient(circle at center, #220022 0%, #050005 100%);
+            margin: 0; padding: 0; background: radial-gradient(circle at center, #1a001a 0%, #050005 100%);
             color: white; overflow: hidden; font-family: 'Cairo', sans-serif; height: 100vh; width: 100vw; 
         }
 
-        /* واجهة الدخول - يجب أن تغطي كل شيء في البداية */
         #overlay { 
             position: absolute; inset: 0; background: #050005; z-index: 300; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             cursor: pointer; transition: opacity 1s; 
         }
-        .heart-btn { font-size: 50px; animation: pulse 1s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+        .heart-btn { font-size: 60px; animation: pulse 1s infinite; filter: drop-shadow(0 0 15px #ff2b6b); }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
-        /* منطقة العناصر العلوية - المقدمة الواضحة (Z-index: 200) */
         #top-container {
-            position: absolute; top: 15px; width: 100%; z-index: 200;
-            text-align: center; opacity: 0; transition: 1.5s;
+            position: absolute; top: 20px; width: 100%; z-index: 200;
+            text-align: center; opacity: 0; transition: 1.5s; pointer-events: none;
         }
 
-        /* ستايل عداد النبض الحي */
-        .pulse-container {
-            width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; margin-bottom: 5px;
+        /* حاوية النبض والعداد الرقمي */
+        .heart-rate-monitor {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 10px;
         }
-        .ecg-svg { width: 80%; height: 100%; stroke: #ff2b6b; stroke-width: 3; fill: none; }
+        .ecg-svg { width: 85%; height: 60px; stroke: #ff2b6b; stroke-width: 3; fill: none; filter: drop-shadow(0 0 5px #ff2b6b); }
         
-        /* حركة خط النبض المستمرة */
         .pulse-path {
-            stroke-dasharray: 1000;
-            stroke-dashoffset: 1000;
-            animation: dashMove 2.5s linear infinite;
+            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+            animation: dashMove 2s linear infinite;
         }
-        @keyframes dashMove {
-            0% { stroke-dashoffset: 1000; }
-            100% { stroke-dashoffset: 0; }
-        }
+        @keyframes dashMove { to { stroke-dashoffset: 0; } }
+
+        /* عداد ضربات القلب الرقمي */
+        .bpm-text { color: #ff2b6b; font-size: 0.9rem; font-weight: bold; text-shadow: 0 0 5px #ff2b6b; margin-top: -5px; }
 
         .name-title {
-            font-size: 2.2rem; font-weight: 700; color: #ff2b6b;
-            text-shadow: 0 0 10px rgba(255, 43, 107, 0.8); margin: 0; 
+            font-size: 2.5rem; font-weight: 700; color: #ff2b6b;
+            text-shadow: 0 0 20px rgba(255, 43, 107, 1); margin: 5px 0; 
         }
 
-        .timer { display: flex; gap: 4px; justify-content: center; margin-top: 8px; }
+        .timer { display: flex; gap: 5px; justify-content: center; }
         .box { 
-            background: rgba(255, 43, 107, 0.1); border: 1px solid rgba(255, 43, 107, 0.6); 
-            padding: 4px 6px; border-radius: 8px; min-width: 42px; 
+            background: rgba(255, 43, 107, 0.15); border: 1px solid rgba(255, 43, 107, 0.8); 
+            padding: 5px 8px; border-radius: 10px; min-width: 45px; 
         }
-        .num { font-size: 1rem; color: #ff2b6b; font-weight: bold; display: block; }
-        .label { font-size: 0.5rem; color: #ccc; }
+        .num { font-size: 1.1rem; color: #ff2b6b; font-weight: bold; display: block; }
+        .label { font-size: 0.6rem; color: #ccc; }
 
-        /* الشجرة الباهتة والخلفية (Z-index: 10) */
+        /* الشجرة (خلفية وباهتة) */
         #treeCanvas { 
-            position: absolute; bottom: 0; left: 0; 
-            z-index: 10; /* خلف العناصر العلوية (200) */
-            pointer-events: none; 
-            opacity: 0.25; /* جعل الشجرة باهتة بنسبة 75% */
-            filter: blur(1px); /* إضافة لمسة ضبابية خفيفة لمزيد من العمق */
-            transition: opacity 2s; /* انسيابية في الظهور */
+            position: absolute; bottom: 0; left: 0; z-index: 10; 
+            pointer-events: none; opacity: 0.2; filter: blur(0.3px);
         }
     </style>
 </head>
@@ -79,10 +71,11 @@
     </div>
 
     <div id="top-container">
-        <div class="pulse-container">
-            <svg class="ecg-svg" viewBox="0 0 400 100" preserveAspectRatio="none">
-                <path class="pulse-path" d="M0,50 L120,50 L130,20 L145,80 L160,10 L175,90 L190,50 L400,50" />
+        <div class="heart-rate-monitor">
+            <svg class="ecg-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
+                <path class="pulse-path" d="M0,50 L100,50 L110,40 L120,50 L135,50 L145,10 L160,90 L175,50 L200,50 L300,50 L310,40 L320,50 L335,50 L345,10 L360,90 L375,50 L500,50" />
             </svg>
+            <div class="bpm-text">💓 <span id="bpm-val">72</span> BPM</div>
         </div>
         
         <div class="name-title">{{ name }}</div>
@@ -110,22 +103,21 @@
             active = true;
             document.getElementById('bgMusic').play().catch(() => {});
             document.getElementById('overlay').style.opacity = '0';
-            
             setTimeout(() => {
                 document.getElementById('overlay').style.display = 'none';
                 document.getElementById('top-container').style.opacity = '1';
-                // الشجرة صغيرة جداً (8% من الطول)
-                drawTree(canvas.width / 2, canvas.height, canvas.height * 0.08, 0, 7);
+                // حجم الشجرة الآن متوسط ومثالي (15% من الارتفاع)
+                drawTree(canvas.width / 2, canvas.height, canvas.height * 0.15, 0, 8);
             }, 1000);
             
             setInterval(updateTime, 1000);
+            setInterval(updateBPM, 2000); // تحديث عداد النبض كل ثانيتين
         }
 
         function drawTree(x, y, len, angle, width) {
-            if (len < 3) return;
+            if (len < 4) return;
             ctx.beginPath();
-            // لون الشجرة باهت قليلاً ليتناسب مع الخلفية (RGB بدلاً من Hex للتحكم البسيط)
-            ctx.strokeStyle = `rgba(255, 43, 107, 0.8)`;
+            ctx.strokeStyle = '#ff2b6b';
             ctx.lineWidth = width;
             ctx.lineCap = 'round';
             ctx.moveTo(x, y);
@@ -134,9 +126,15 @@
             ctx.lineTo(nx, ny);
             ctx.stroke();
             setTimeout(() => {
-                drawTree(nx, ny, len * 0.75, angle + 25 + Math.random() * 5, width * 0.7);
-                drawTree(nx, ny, len * 0.75, angle - 25 - Math.random() * 5, width * 0.7);
+                drawTree(nx, ny, len * 0.78, angle + 25 + Math.random() * 5, width * 0.7);
+                drawTree(nx, ny, len * 0.78, angle - 25 - Math.random() * 5, width * 0.7);
             }, 50);
+        }
+
+        function updateBPM() {
+            // توليد نبضات قلب عشوائية بين 70 و 85 لتبدو واقعية
+            const val = Math.floor(Math.random() * (85 - 70 + 1)) + 70;
+            document.getElementById('bpm-val').innerText = val;
         }
 
         function updateTime() {
