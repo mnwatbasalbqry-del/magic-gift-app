@@ -7,70 +7,61 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { 
-            margin: 0; padding: 0; background: radial-gradient(circle at center, #1a001a 0%, #050005 100%);
-            color: white; overflow: hidden; font-family: 'Cairo', sans-serif; height: 100vh; width: 100vw; 
+            margin: 0; padding: 0; background: #050005; 
+            color: white; overflow: hidden; font-family: 'Cairo', sans-serif; height: 100vh; width: 100vw;
         }
 
         /* واجهة الدخول */
         #overlay { 
-            position: absolute; inset: 0; background: #050005; z-index: 300; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            cursor: pointer; transition: opacity 1s; 
+            position: absolute; inset: 0; background: #050005; z-index: 500; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; 
         }
-        .heart-btn { font-size: 60px; animation: pulse 1s infinite; filter: drop-shadow(0 0 15px #ff2b6b); }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .heart-btn { font-size: 70px; animation: pulse 1s infinite; filter: drop-shadow(0 0 20px #ff2b6b); }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
 
-        /* حاوية المحتوى */
-        #content {
-            position: absolute; top: 10px; width: 100%; z-index: 200;
-            text-align: center; opacity: 0; transition: 1.5s; pointer-events: none;
-        }
+        /* حاوية المحتوى الرئيسي */
+        #container { position: absolute; top: 10%; width: 100%; text-align: center; opacity: 0; transition: 2s; z-index: 200; pointer-events: none; }
+        
+        /* النبض الواقعي */
+        .ecg-svg { width: 85%; height: 50px; stroke: #ff2b6b; stroke-width: 3; fill: none; filter: drop-shadow(0 0 5px #ff2b6b); }
+        .pulse-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: dash 2.5s linear infinite; }
+        @keyframes dash { to { stroke-dashoffset: 0; } }
 
-        /* النبض */
-        .ecg-svg { width: 80%; height: 40px; stroke: #ff2b6b; stroke-width: 3; fill: none; }
-        .pulse-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: dashMove 2s linear infinite; }
-        @keyframes dashMove { to { stroke-dashoffset: 0; } }
+        .name-title { font-size: 2.8rem; font-weight: 700; color: #ff2b6b; text-shadow: 0 0 20px #ff2b6b; margin: 5px 0; }
+        
+        /* صندوق كلمات الأغنية */
+        #lyrics-box { height: 80px; display: flex; align-items: center; justify-content: center; padding: 0 15px; margin-top: 10px; }
+        #lyric-text { font-family: 'Amiri', serif; font-size: 1.6rem; color: #fff; text-shadow: 0 0 10px #ff2b6b; text-align: center; transition: 0.4s; }
 
-        .name-title { font-size: 2.5rem; font-weight: 700; color: #ff2b6b; text-shadow: 0 0 15px #ff2b6b; margin: 0; }
-
-        /* كلمات الأغنية المتزامنة */
-        #lyrics-container {
-            height: 80px; margin: 20px 0; display: flex; align-items: center; justify-content: center;
-        }
-        #lyrics {
-            font-family: 'Amiri', serif; font-size: 1.5rem; color: #fff;
-            text-shadow: 0 0 10px #ff2b6b; transition: all 0.5s ease;
-            min-height: 1.5em;
-        }
-
-        /* العداد */
-        .timer { display: flex; gap: 5px; justify-content: center; margin-top: 10px; }
-        .box { background: rgba(255, 43, 107, 0.15); border: 1px solid #ff2b6b; padding: 5px; border-radius: 8px; min-width: 45px; }
-        .num { font-size: 1rem; color: #ff2b6b; font-weight: bold; display: block; }
+        /* عداد الوقت */
+        .timer { display: flex; gap: 6px; justify-content: center; margin-top: 15px; }
+        .box { background: rgba(255, 43, 107, 0.1); border: 1px solid #ff2b6b; padding: 8px; border-radius: 12px; min-width: 45px; }
+        .num { font-size: 1.1rem; color: #ff2b6b; font-weight: bold; display: block; }
         .label { font-size: 0.6rem; color: #ccc; }
 
-        canvas { position: absolute; bottom: 0; left: 0; z-index: 10; pointer-events: none; opacity: 0.2; }
+        /* الكانفاس الخاص بالشجرة الباهتة */
+        canvas { position: absolute; bottom: 0; left: 0; z-index: 10; opacity: 0.25; pointer-events: none; }
     </style>
 </head>
-<body onclick="startExperience()">
+<body onclick="playExperience()">
 
-    <audio id="bgMusic" preload="auto">
-        <source src="https://github.com/mnwatbasalbqry-del/naba-project/raw/main/_%D8%AD%D8%B3%D9%8A%D9%86_%D8%A7%D9%8الغازال%20_%D8%A7%D8%BA%D8%A7%D9%86%D9%8A_%D9%85%D8%B3%D8%B1%D8%B9%D9%87%F0%9F%92%A5%20_fyp%20_%D9%87%D9%88%D8%A7%D8%AC%D9%8A%D8%B3%20_%D8%A7%D8%B9%D8%A7%D8%AF%D8%A9_%D8%A7%D9%84%D9%86%D8%B4%D8%B1%F0%9F%94%83%20(MP3).mp3" type="audio/mpeg">
+    <audio id="player" preload="auto" loop>
+        <source src="https://github.com/mnwatbasalbqry-del/naba-project/raw/main/_%D8%AD%D8%B3%D9%8A%D9%86_%D8%A7%D9%84%D8%BA%D8%B2%D8%A7%D9%84%20_%D8%A7%D8%BA%D8%A7%D9%86%D9%8I_%D9%85%D8%B3%D8%B1%D8%B9%D9%87%F0%9F%92%A5%20_fyp%20_%D9%87%D9%80%D9%88%D8%A7%D8%AC%D9%8A%D8%B3%20_%D8%A7%D8%B9%D8%A7%D8%AF%D8%A9_%D8%A7%D9%84%D9%86%D8%B4%D8%B1%F0%9F%94%83%20(MP3).mp3" type="audio/mpeg">
     </audio>
 
     <div id="overlay">
         <div class="heart-btn">❤️</div>
-        <p style="color:#ff2b6b; font-weight: bold;">إلمس القلب ليتم التشغيل</p>
+        <p style="color:#ff2b6b; margin-top: 20px; font-weight: bold;">إلمس القلب لتشغيل الموسيقى والنبض</p>
     </div>
 
-    <div id="content">
+    <div id="container">
         <svg class="ecg-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
-            <path class="pulse-path" d="M0,50 L100,50 L110,40 L120,50 L135,50 L145,10 L160,90 L175,50 L500,50" />
+            <path class="pulse-path" d="M0,50 L100,50 L115,20 L130,80 L145,10 L160,90 L175,50 L500,50" />
         </svg>
         <div class="name-title">{{ name }}</div>
         
-        <div id="lyrics-container">
-            <div id="lyrics">...</div>
+        <div id="lyrics-box">
+            <div id="lyric-text">...</div>
         </div>
 
         <div id="timer" class="timer"></div>
@@ -79,72 +70,90 @@
     <canvas id="treeCanvas"></canvas>
 
     <script>
-        const audio = document.getElementById('bgMusic');
-        const lyricsEl = document.getElementById('lyrics');
-        let active = false;
-
-        // مصفوفة الكلمات (الوقت بالثواني : النص)
-        // ملاحظة: قم بتعديل الأوقات لتطابق أغنية حسين الغزال بدقة
-        const lyricsData = [
-            { time: 1, text: "يا ضحكة أيامي" },
-            { time: 4, text: "يا أغلى من روحي" },
-            { time: 7, text: "حبك دوا لجروحي" },
-            { time: 10, text: "يا نور هالكون" },
-            { time: 14, text: "بقلبي سكنتِ بجنون" }
-        ];
-
-        function startExperience() {
-            if (active) return;
-            active = true;
-
-            // محاولة تشغيل الصوت بكل الطرق
-            audio.play().catch(() => {
-                audio.muted = true;
-                audio.play();
-                setTimeout(() => { audio.muted = false; }, 200);
-            });
-
-            document.getElementById('overlay').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('overlay').style.display = 'none';
-                document.getElementById('content').style.opacity = '1';
-                initTree();
-            }, 1000);
-
-            // تتبع وقت الأغنية لتحديث الكلمات
-            audio.ontimeupdate = () => {
-                const currentTime = audio.currentTime;
-                const currentLyric = lyricsData.find((l, i) => {
-                    const next = lyricsData[i + 1];
-                    return currentTime >= l.time && (!next || currentTime < next.time);
-                });
-                if (currentLyric) {
-                    lyricsEl.innerText = currentLyric.text;
-                }
-            };
-        }
-
-        // إعداد الشجرة (نفس الكود السابق لضمان الحجم والبهاء)
+        const audio = document.getElementById('player');
+        const lyricDisplay = document.getElementById('lyric-text');
         const canvas = document.getElementById('treeCanvas');
         const ctx = canvas.getContext('2d');
-        function initTree() {
+        let started = false;
+
+        // مصفوفة كلمات الأغنية المتزامنة (عدل الثواني لتناسب اللحن)
+        const songLyrics = [
+            { time: 0.5, text: "بدأت الحكاية.." },
+            { time: 3, text: "ونبض قلبي صار باسمك" },
+            { time: 6, text: "يا أغلى من روحي" },
+            { time: 9, text: "يا ضحكة أيامي" }
+        ];
+
+        function playExperience() {
+            if (started) return;
+            started = true;
+
+            // محاولة تشغيل الصوت بكل الوسائل الممكنة
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log("Audio started");
+                }).catch(() => {
+                    audio.muted = true;
+                    audio.play();
+                    setTimeout(() => { audio.muted = false; }, 500);
+                });
+            }
+
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('container').style.opacity = '1';
+            
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            drawTree(canvas.width / 2, canvas.height, canvas.height * 0.12, 0, 7);
+
+            // بدء نمو الشجرة تدريجياً
+            growTree(canvas.width / 2, canvas.height, canvas.height * 0.15, 0, 8);
+            
+            setInterval(syncLyrics, 100);
             setInterval(updateClock, 1000);
         }
 
-        function drawTree(x, y, len, angle, width) {
-            if (len < 4) return;
-            ctx.beginPath(); ctx.strokeStyle = '#ff2b6b'; ctx.lineWidth = width;
-            ctx.lineCap = 'round'; ctx.moveTo(x, y);
-            const nx = x + Math.sin(angle * Math.PI / 180) * len;
-            const ny = y - Math.cos(angle * Math.PI / 180) * len;
-            ctx.lineTo(nx, ny); ctx.stroke();
+        // دالة نمو الشجرة الحقيقية (ترسم كل جزء بعد تأخير بسيط)
+        function growTree(x, y, len, angle, width) {
+            if (len < 5) return;
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#ff2b6b';
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle * Math.PI / 180);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -len);
+            ctx.stroke();
+            ctx.restore();
+
+            // حساب نقطة نهاية الغصن الحالي لتكون بداية الغصن القادم
+            const endX = x + Math.sin(angle * Math.PI / 180) * len;
+            const endY = y - Math.cos(angle * Math.PI / 180) * len;
+
+            // التوقيت الذي يخلق تأثير النمو (150ms)
             setTimeout(() => {
-                drawTree(nx, ny, len * 0.78, angle + 25 + Math.random() * 5, width * 0.7);
-                drawTree(nx, ny, len * 0.78, angle - 25 - Math.random() * 5, width * 0.7);
-            }, 50);
+                growTree(endX, endY, len * 0.78, angle + 25 + Math.random() * 10, width * 0.7);
+                growTree(endX, endY, len * 0.78, angle - 25 - Math.random() * 10, width * 0.7);
+            }, 150); 
+        }
+
+        function syncLyrics() {
+            const now = audio.currentTime;
+            const current = songLyrics.find((l, i) => {
+                const next = songLyrics[i+1];
+                return now >= l.time && (!next || now < next.time);
+            });
+            if (current && lyricDisplay.innerText !== current.text) {
+                lyricDisplay.style.opacity = 0;
+                setTimeout(() => {
+                    lyricDisplay.innerText = current.text;
+                    lyricDisplay.style.opacity = 1;
+                }, 200);
+            }
         }
 
         function updateClock() {
@@ -158,7 +167,8 @@
                 <div class="box"><span class="num">${d}</span><span class="label">يوم</span></div>
                 <div class="box"><span class="num">${h}</span><span class="label">ساعة</span></div>
                 <div class="box"><span class="num">${m}</span><span class="label">دقيقة</span></div>
-                <div class="box"><span class="num">${s}</span><span class="label">ثانية</span></div>`;
+                <div class="box"><span class="num">${s}</span><span class="label">ثانية</span></div>
+            `;
         }
     </script>
 </body>
