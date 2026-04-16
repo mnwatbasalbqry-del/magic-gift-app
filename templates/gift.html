@@ -7,73 +7,68 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;700&display=swap" rel="stylesheet">
     <style>
         body { 
-            margin: 0; background: radial-gradient(circle at center, #1a001a 0%, #050005 100%);
-            color: white; overflow: hidden; font-family: 'Cairo', sans-serif; 
-            height: 100vh; width: 100vw; touch-action: manipulation;
+            margin: 0; background: #050005; color: white; overflow: hidden; 
+            font-family: 'Cairo', sans-serif; height: 100vh; width: 100vw; 
         }
 
         /* واجهة الدخول */
         #overlay { 
-            position: absolute; inset: 0; background: #050005; 
-            z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            cursor: pointer; transition: opacity 1s ease; 
+            position: absolute; inset: 0; background: #050005; z-index: 200; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            cursor: pointer; transition: opacity 1s; 
         }
-        .heart-btn { font-size: 80px; animation: pulseStart 1.3s infinite; filter: drop-shadow(0 0 15px #ff2b6b); }
-        @keyframes pulseStart { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+        .heart-btn { font-size: 60px; animation: pulse 1.2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
-        /* حاوية العناصر العلوية */
-        #top-ui {
-            position: absolute; top: 5%; width: 100%; z-index: 100;
-            text-align: center; opacity: 0; transition: opacity 2s;
+        /* منطقة العناصر العلوية */
+        #top-container {
+            position: absolute; top: 30px; width: 100%; z-index: 100;
+            text-align: center; opacity: 0; transition: 2s;
         }
 
-        /* تخطيط النبض ECG */
-        .ecg-container { width: 100%; height: 80px; margin-bottom: -10px; }
-        #ecg-path {
-            stroke: #ff2b6b; stroke-width: 3; fill: none;
+        /* النبض ECG - تم إصلاح الظهور */
+        .ecg-svg { width: 90%; height: 60px; stroke: #ff2b6b; stroke-width: 3; fill: none; }
+        .pulse-path {
             stroke-dasharray: 1000; stroke-dashoffset: 1000;
-            animation: drawLine 3s linear infinite;
+            animation: dash 3s linear infinite;
         }
-        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+        @keyframes dash { to { stroke-dashoffset: 0; } }
 
-        /* الاسم تحت النبض مباشرة */
-        .name-display {
-            font-size: clamp(2.5rem, 12vw, 4rem); font-weight: 700; color: #ff2b6b;
-            text-shadow: 0 0 20px #ff2b6b; margin: 5px 0; letter-spacing: 2px;
+        .name-title {
+            font-size: 2.8rem; font-weight: 700; color: #ff2b6b;
+            text-shadow: 0 0 15px rgba(255, 43, 107, 0.7); margin: 5px 0;
         }
 
-        /* العداد */
-        .timer-container { display: flex; gap: 8px; justify-content: center; margin-top: 15px; }
+        /* العداد المدمج */
+        .timer { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
         .box { 
-            background: rgba(255, 43, 107, 0.15); border: 1px solid rgba(255, 43, 107, 0.5); 
-            padding: 8px; border-radius: 12px; min-width: 55px; 
+            background: rgba(255, 43, 107, 0.1); border: 1px solid #ff2b6b; 
+            padding: 5px 8px; border-radius: 10px; min-width: 50px; 
         }
-        .num { font-size: 1.2rem; color: #ff2b6b; font-weight: 700; display: block; }
-        .label { font-size: 0.6rem; color: #ddd; }
+        .num { font-size: 1.1rem; color: #ff2b6b; font-weight: bold; display: block; }
+        .label { font-size: 0.6rem; color: #ccc; }
 
-        /* الشجرة في الخلفية */
+        /* الشجرة */
         canvas { position: absolute; bottom: 0; left: 0; z-index: 1; pointer-events: none; }
     </style>
 </head>
-<body onclick="startExperience()">
+<body onclick="initExperience()">
 
-    <audio id="mySong" preload="auto">
-        <source src="https://raw.githubusercontent.com/mnwatbasalbqry-del/naba-project/main/_%D8%AD%D8%B3%D9%8A%D9%86_%D8%A7%D9%84%D8%BA%D8%B2%D8%A7%D9%84%20_%D8%A7%D8%BA%D8%A7%D9%86%D9%8A_%D9%85%D8%B3%D8%B1%D8%B9%D9%87%F0%9F%92%A5%20_fyp%20_%D9%87%D9%80%D9%88%D8%A7%D8%AC%D9%8A%D8%B3%20_%D8%A7%D8%B9%D8%A7%D8%AF%D8%A9_%D8%A7%D9%84%D9%86%D8%B4%D8%B1%F0%9F%94%83%20(MP3).mp3" type="audio/mpeg">
+    <audio id="bgMusic" preload="auto">
+        <source src="https://raw.githubusercontent.com/mnwatbasalbqry-del/naba-project/main/_%D8%AD%D8%B3%D9%8A%D9%86_%D8%A7%D9%84%D8%BA%D8%B2%D8%A7%D9%84%20_%D8%A7%D8%BA%D8%A7%D9%86%D9%8A_%D9%85%D8%B3%D8%B1%D8%B9%D9%87%F0%9F%92%A5%20_fyp%20_%D9%87%D9%88%D8%A7%D8%AC%D9%8A%D8%B3%20_%D8%A7%D8%B9%D8%A7%D8%AF%D8%A9_%D8%A7%D9%84%D9%86%D8%B4%D8%B1%F0%9F%94%83%20(MP3).mp3" type="audio/mpeg">
     </audio>
 
     <div id="overlay">
         <div class="heart-btn">❤️</div>
-        <p style="color:#ff2b6b; margin-top:10px; font-weight:700;">إلمس القلب</p>
+        <p style="color:#ff2b6b;">إلمس القلب يا عبقري</p>
     </div>
 
-    <div id="top-ui">
-        <svg class="ecg-container" viewBox="0 0 1000 100">
-            <path id="ecg-path" d="M0,50 L200,50 L215,20 L230,80 L245,10 L260,90 L275,50 L450,50 L465,30 L480,70 L500,50 L700,50 L715,15 L735,85 L755,50 L1000,50" />
+    <div id="top-container">
+        <svg class="ecg-svg" viewBox="0 0 600 100">
+            <path class="pulse-path" d="M0,50 L250,50 L260,20 L275,80 L290,10 L305,90 L320,50 L600,50" />
         </svg>
-        
-        <div class="name-display">{{ name }}</div>
-        
-        <div id="timer" class="timer-container"></div>
+        <div class="name-title">{{ name }}</div>
+        <div id="timer" class="timer"></div>
     </div>
 
     <canvas id="treeCanvas"></canvas>
@@ -82,66 +77,53 @@
         const canvas = document.getElementById('treeCanvas');
         const ctx = canvas.getContext('2d');
         const targetDate = new Date("{{ date }}");
-        let started = false;
+        let active = false;
 
-        function init() {
+        function setup() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         }
-        window.onresize = init;
-        init();
+        window.onresize = setup;
+        setup();
 
-        function startExperience() {
-            if (started) return;
-            started = true;
-            
-            const audio = document.getElementById('mySong');
-            audio.play().catch(() => console.log("تحتاج لتفاعل المستخدم أولاً"));
-            
+        function initExperience() {
+            if (active) return;
+            active = true;
+
+            document.getElementById('bgMusic').play().catch(() => {});
             document.getElementById('overlay').style.opacity = '0';
+            
             setTimeout(() => {
                 document.getElementById('overlay').style.display = 'none';
-                document.getElementById('top-ui').style.opacity = '1';
-                // بدء نمو الشجرة من الأسفل بالمنتصف
-                drawBranch(canvas.width / 2, canvas.height, canvas.height * 0.22, 0, 15);
+                document.getElementById('top-container').style.opacity = '1';
+                // الشجرة صغيرة (0.12 من طول الشاشة)
+                grow(canvas.width / 2, canvas.height, canvas.height * 0.12, 0, 10);
             }, 1000);
 
-            setInterval(updateTimer, 100);
+            setInterval(tick, 1000);
         }
 
-        function drawBranch(x, y, len, angle, width) {
-            if (len < 6) {
-                drawLeaf(x, y);
-                return;
-            }
-
+        function grow(x, y, len, angle, width) {
+            if (len < 4) return;
             ctx.beginPath();
-            ctx.strokeStyle = `rgb(${80 + (15-width)*10}, 20, 45)`;
+            ctx.strokeStyle = '#ff2b6b';
             ctx.lineWidth = width;
             ctx.lineCap = 'round';
             ctx.moveTo(x, y);
-
             const nx = x + Math.sin(angle * Math.PI / 180) * len;
             const ny = y - Math.cos(angle * Math.PI / 180) * len;
-
             ctx.lineTo(nx, ny);
             ctx.stroke();
 
             setTimeout(() => {
-                drawBranch(nx, ny, len * 0.78, angle + (20 + Math.random() * 20), width * 0.7);
-                drawBranch(nx, ny, len * 0.78, angle - (20 + Math.random() * 20), width * 0.7);
+                grow(nx, ny, len * 0.8, angle + 25 + Math.random() * 10, width * 0.7);
+                grow(nx, ny, len * 0.8, angle - 25 - Math.random() * 10, width * 0.7);
             }, 60);
         }
 
-        function drawLeaf(x, y) {
-            ctx.fillStyle = "#ff2b6b";
-            ctx.beginPath();
-            ctx.arc(x, y, 2 + Math.random() * 3, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function updateTimer() {
-            const diff = new Date() - targetDate;
+        function tick() {
+            const now = new Date();
+            const diff = now - targetDate;
             const d = Math.floor(diff / 86400000);
             const h = Math.floor((diff / 3600000) % 24);
             const m = Math.floor((diff / 60000) % 60);
