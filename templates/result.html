@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>الباركود جاهز</title>
+    <style>
+        body { background: #050005; color: white; text-align: center; padding: 50px; font-family: sans-serif; }
+        img { border: 5px solid white; border-radius: 10px; margin: 20px; max-width: 250px; }
+        .btn { background: #ff2b6b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h2>تم صنع الهدية بنجاح! ❤️</h2>
+    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+    <p>اضغط على الرابط للمعاينة:</p>
+    <a href="{{ url }}" class="btn">فتح الهدية</a>
+    <br><br><br>
+    <a href="/" style="color: #888;">إنشاء واحد آخر</a>
+</body>
+</html>
