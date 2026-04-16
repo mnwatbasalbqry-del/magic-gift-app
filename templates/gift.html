@@ -11,80 +11,70 @@
         .heart-btn { font-size: 70px; animation: pulse 1s infinite; filter: drop-shadow(0 0 20px #ff2b6b); }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
         #container { position: absolute; top: 10%; width: 100%; text-align: center; opacity: 0; transition: 2s; z-index: 200; pointer-events: none; }
-        .ecg-svg { width: 85%; height: 50px; stroke: #ff2b6b; stroke-width: 3; fill: none; filter: drop-shadow(0 0 5px #ff2b6b); }
-        .pulse-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: dash 2.5s linear infinite; }
-        @keyframes dash { to { stroke-dashoffset: 0; } }
         .name-title { font-size: 2.8rem; font-weight: 700; color: #ff2b6b; text-shadow: 0 0 20px #ff2b6b; margin: 5px 0; }
         #lyrics-box { height: 80px; display: flex; align-items: center; justify-content: center; padding: 0 15px; }
-        #lyric-text { font-family: 'Amiri', serif; font-size: 1.6rem; color: #fff; text-shadow: 0 0 10px #ff2b6b; text-align: center; transition: 0.4s; }
-        .timer { display: flex; gap: 6px; justify-content: center; margin-top: 15px; }
-        .box { background: rgba(255, 43, 107, 0.1); border: 1px solid #ff2b6b; padding: 8px; border-radius: 12px; min-width: 45px; }
-        .num { font-size: 1.1rem; color: #ff2b6b; font-weight: bold; display: block; }
-        canvas { position: absolute; bottom: 0; left: 0; z-index: 10; opacity: 0.25; pointer-events: none; }
+        #lyric-text { font-family: 'Amiri', serif; font-size: 1.6rem; color: #fff; text-shadow: 0 0 10px #ff2b6b; text-align: center; }
+        canvas { position: absolute; bottom: 0; left: 0; z-index: 10; opacity: 0.3; pointer-events: none; }
     </style>
 </head>
-<body onclick="playExperience()">
+<body onclick="forcePlay()">
 
     <audio id="player" preload="auto" loop>
-        <source src="{{ url_for('static', filename='song.mp3') }}" type="audio/mpeg">
+        <source src="/static/song.mp3" type="audio/mpeg">
     </audio>
 
     <div id="overlay">
         <div class="heart-btn">❤️</div>
-        <p style="color:#ff2b6b; margin-top: 20px; font-weight: bold;">إلمس القلب للبدء</p>
+        <p style="color:#ff2b6b; margin-top: 20px; font-weight: bold;">اضغط بقوة للتشغيل</p>
     </div>
 
     <div id="container">
-        <svg class="ecg-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
-            <path class="pulse-path" d="M0,50 L100,50 L115,20 L130,80 L145,10 L160,90 L175,50 L500,50" />
-        </svg>
         <div class="name-title">{{ name }}</div>
         <div id="lyrics-box"><div id="lyric-text">...</div></div>
-        <div id="timer" class="timer"></div>
+        <div id="timer" style="margin-top: 20px; font-size: 1.2rem; color: #ff2b6b;"></div>
     </div>
 
     <canvas id="treeCanvas"></canvas>
 
     <script>
         const audio = document.getElementById('player');
-        const lyricDisplay = document.getElementById('lyric-text');
-        const canvas = document.getElementById('treeCanvas');
-        const ctx = canvas.getContext('2d');
         let started = false;
 
-        // مصفوفة كلمات الأغنية (عدلها لتناسب وقت الأغنية بالثواني)
-        const songLyrics = [
-            { time: 0.5, text: "يا ضحكة أيامي.." },
-            { time: 5, text: "يا أغلى من روحي" },
-            { time: 10, text: "نبض القلب باسمك" },
-            { time: 15, text: "يا أغلى الحكايات" }
-        ];
-
-        function playExperience() {
+        function forcePlay() {
             if (started) return;
             started = true;
 
-            // محاولة تشغيل الصوت يدوياً
-            audio.play().catch(() => {
-                audio.muted = true;
-                audio.play();
-                setTimeout(() => { audio.muted = false; }, 500);
-            });
+            // محاولة التشغيل "القسري"
+            audio.muted = false;
+            const playPromise = audio.play();
+
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log("اشتغل!");
+                }).catch(error => {
+                    console.log("المتصفح يمنع التشغيل: ", error);
+                    // محاولة أخيرة: كتم ثم تشغيل ثم إلغاء كتم
+                    audio.muted = true;
+                    audio.play();
+                    setTimeout(() => { audio.muted = false; }, 500);
+                });
+            }
 
             document.getElementById('overlay').style.display = 'none';
             document.getElementById('container').style.opacity = '1';
             
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            // بدء نمو الشجرة
-            growTree(canvas.width / 2, canvas.height, canvas.height * 0.15, 0, 8);
-            
-            setInterval(syncLyrics, 100);
-            setInterval(updateClock, 1000);
+            initCanvas();
+            drawTree(window.innerWidth / 2, window.innerHeight, window.innerHeight * 0.15, 0, 8);
         }
 
-        function growTree(x, y, len, angle, width) {
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function drawTree(x, y, len, angle, width) {
             if (len < 5) return;
             ctx.beginPath();
             ctx.strokeStyle = '#ff2b6b';
@@ -102,33 +92,9 @@
             const endY = y - Math.cos(angle * Math.PI / 180) * len;
 
             setTimeout(() => {
-                growTree(endX, endY, len * 0.78, angle + 25 + Math.random() * 10, width * 0.7);
-                growTree(endX, endY, len * 0.78, angle - 25 - Math.random() * 10, width * 0.7);
-            }, 150); 
-        }
-
-        function syncLyrics() {
-            const now = audio.currentTime;
-            const current = songLyrics.find((l, i) => {
-                const next = songLyrics[i+1];
-                return now >= l.time && (!next || now < next.time);
-            });
-            if (current) lyricDisplay.innerText = current.text;
-        }
-
-        function updateClock() {
-            const target = new Date("{{ date }}");
-            const diff = new Date() - target;
-            const d = Math.floor(diff / 86400000);
-            const h = Math.floor((diff / 3600000) % 24);
-            const m = Math.floor((diff / 60000) % 60);
-            const s = Math.floor((diff / 1000) % 60);
-            document.getElementById('timer').innerHTML = `
-                <div class="box"><span class="num">${d}</span> يوم</div>
-                <div class="box"><span class="num">${h}</span> ساعة</div>
-                <div class="box"><span class="num">${m}</span> دقيقة</div>
-                <div class="box"><span class="num">${s}</span> ثانية</div>
-            `;
+                drawTree(endX, endY, len * 0.78, angle + 25 + Math.random() * 10, width * 0.7);
+                drawTree(endX, endY, len * 0.78, angle - 25 - Math.random() * 10, width * 0.7);
+            }, 100); 
         }
     </script>
 </body>
