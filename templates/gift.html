@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>إلى {{ name }} ❤️</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;700&family=Amiri:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;700&display=swap" rel="stylesheet">
     <style>
         body { 
             margin: 0; padding: 0; background: radial-gradient(circle at center, #1a001a 0%, #050005 100%);
             color: white; overflow: hidden; font-family: 'Cairo', sans-serif; height: 100vh; width: 100vw; 
         }
-
-        /* واجهة البداية */
         #overlay { 
             position: absolute; inset: 0; background: #050005; z-index: 300; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
@@ -19,135 +17,103 @@
         }
         .heart-btn { font-size: 60px; animation: pulse 1s infinite; filter: drop-shadow(0 0 15px #ff2b6b); }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-
-        /* المحتوى العلوي */
         #top-container {
-            position: absolute; top: 15px; width: 100%; z-index: 200;
+            position: absolute; top: 20px; width: 100%; z-index: 200;
             text-align: center; opacity: 0; transition: 1.5s; pointer-events: none;
         }
-
-        /* النبض ECG */
-        .ecg-svg { width: 85%; height: 50px; stroke: #ff2b6b; stroke-width: 3; fill: none; filter: drop-shadow(0 0 5px #ff2b6b); }
-        .pulse-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: dashMove 2s linear infinite; }
-        @keyframes dashMove { to { stroke-dashoffset: 0; } }
-
-        .name-title { font-size: 2.2rem; font-weight: 700; color: #ff2b6b; text-shadow: 0 0 15px #ff2b6b; margin: 5px 0; }
-        
-        /* عداد الوقت */
-        .timer { display: flex; gap: 5px; justify-content: center; margin-bottom: 10px; }
-        .box { background: rgba(255, 43, 107, 0.1); border: 1px solid rgba(255, 43, 107, 0.5); padding: 5px 8px; border-radius: 8px; min-width: 40px; }
-        .num { font-size: 1rem; color: #ff2b6b; font-weight: bold; display: block; }
-        .label { font-size: 0.6rem; color: #ccc; }
-
-        /* صندوق الشعر */
-        #lyric-text { font-family: 'Amiri', serif; font-size: 1.5rem; color: #fff; text-shadow: 0 0 10px #ff2b6b; height: 60px; transition: 0.5s; }
-
-        /* الشجرة */
+        .ecg-svg { width: 85%; height: 60px; stroke: #ff2b6b; stroke-width: 3; fill: none; filter: drop-shadow(0 0 5px #ff2b6b); }
+        .name-title { font-size: 2.5rem; font-weight: 700; color: #ff2b6b; text-shadow: 0 0 20px rgba(255, 43, 107, 1); margin: 5px 0; }
+        .timer { display: flex; gap: 5px; justify-content: center; }
+        .box { background: rgba(255, 43, 107, 0.15); border: 1px solid rgba(255, 43, 107, 0.8); padding: 5px 8px; border-radius: 10px; min-width: 45px; }
+        .num { font-size: 1.1rem; color: #ff2b6b; font-weight: bold; display: block; }
         canvas { position: absolute; bottom: 0; left: 0; z-index: 10; pointer-events: none; opacity: 0.3; }
     </style>
 </head>
 <body onclick="initExperience()">
 
-    <audio id="bgMusic" loop preload="auto">
-        <source src="https://files.catbox.moe/6gwla0.mpeg" type="audio/mpeg">
-    </audio>
-
     <div id="overlay">
         <div class="heart-btn">❤️</div>
-        <p style="color:#ff2b6b; font-weight: bold; margin-top: 10px;">إلمس القلب يا عبقري</p>
+        <p style="color:#ff2b6b; font-weight: bold; margin-top: 10px;">إلمس القلب للصوت</p>
     </div>
 
     <div id="top-container">
         <svg class="ecg-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
-            <path class="pulse-path" d="M0,50 L100,50 L110,40 L120,50 L135,50 L145,10 L160,90 L175,50 L500,50" />
+            <path d="M0,50 L100,50 L110,40 L120,50 L135,50 L145,10 L160,90 L175,50 L500,50" stroke="#ff2b6b" fill="none" />
         </svg>
         <div class="name-title">{{ name }}</div>
         <div id="timer" class="timer"></div>
-        <div id="lyric-text">...</div>
     </div>
 
     <canvas id="treeCanvas"></canvas>
 
     <script>
-        const canvas = document.getElementById('treeCanvas');
-        const ctx = canvas.getContext('2d');
-        const audio = document.getElementById('bgMusic');
-        const lyricText = document.getElementById('lyric-text');
+        // تعريف الصوت برمجياً لضمان الدقة
+        const audio = new Audio("https://files.catbox.moe/6gwla0.mpeg");
+        audio.loop = true;
         let active = false;
-
-        // مصفوفة الشعر المتزامن
-        const poetry = [
-            { t: 1, text: "في قلبي نبضٌ لا يهدأ" },
-            { t: 5, text: "وفي روحي حبٌ لكِ ينمو" },
-            { t: 10, text: "أنتِ القصيدة وأنتِ الحياة" },
-            { t: 15, text: "يا أغلى من كل الكلمات" }
-        ];
 
         function initExperience() {
             if (active) return;
             active = true;
 
-            // كسر حماية الصوت
-            audio.play().catch(() => {
-                audio.muted = true;
+            // محاولة التشغيل فور الضغط
+            audio.play().then(() => {
+                console.log("الصوت يعمل!");
+            }).catch(err => {
+                // إذا رفض المتصفح، نحاول بطريقة الـ Context
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
                 audio.play();
-                setTimeout(() => audio.muted = false, 500);
             });
 
             document.getElementById('overlay').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('overlay').style.display = 'none';
                 document.getElementById('top-container').style.opacity = '1';
-                
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                // دالة النمو غصناً غصناً
-                drawTree(canvas.width / 2, canvas.height, canvas.height * 0.15, 0, 8);
-            }, 1000);
+                setupTree();
+            }, 800);
             
             setInterval(updateTime, 1000);
-            setInterval(syncPoetry, 100);
         }
 
-        function drawTree(x, y, len, angle, width) {
-            if (len < 4) return;
-            ctx.beginPath();
-            ctx.strokeStyle = '#ff2b6b';
-            ctx.lineWidth = width;
-            ctx.lineCap = 'round';
-            ctx.moveTo(x, y);
-            const nx = x + Math.sin(angle * Math.PI / 180) * len;
-            const ny = y - Math.cos(angle * Math.PI / 180) * len;
-            ctx.lineTo(nx, ny);
-            ctx.stroke();
-            setTimeout(() => {
-                drawTree(nx, ny, len * 0.78, angle + 25 + Math.random() * 5, width * 0.7);
-                drawTree(nx, ny, len * 0.78, angle - 25 - Math.random() * 5, width * 0.7);
-            }, 80);
-        }
+        function setupTree() {
+            const canvas = document.getElementById('treeCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
 
-        function syncPoetry() {
-            const time = audio.currentTime;
-            const current = poetry.find((p, i) => {
-                const next = poetry[i+1];
-                return time >= p.t && (!next || time < next.t);
-            });
-            if (current && lyricText.innerText !== current.text) {
-                lyricText.innerText = current.text;
+            function drawTree(x, y, len, angle, width) {
+                if (len < 4) return;
+                ctx.beginPath();
+                ctx.strokeStyle = '#ff2b6b';
+                ctx.lineWidth = width;
+                ctx.moveTo(x, y);
+                const nx = x + Math.sin(angle * Math.PI / 180) * len;
+                const ny = y - Math.cos(angle * Math.PI / 180) * len;
+                ctx.lineTo(nx, ny);
+                ctx.stroke();
+                setTimeout(() => {
+                    drawTree(nx, ny, len * 0.78, angle + 25 + Math.random() * 5, width * 0.7);
+                    drawTree(nx, ny, len * 0.78, angle - 25 - Math.random() * 5, width * 0.7);
+                }, 80);
             }
+            drawTree(canvas.width / 2, canvas.height, canvas.height * 0.15, 0, 8);
         }
 
         function updateTime() {
+            // ملاحظة: تأكد من تمرير التاريخ بشكل صحيح من Flask
             const diff = new Date() - new Date("{{ date }}");
             const d = Math.floor(diff / 86400000);
             const h = Math.floor((diff / 3600000) % 24);
             const m = Math.floor((diff / 60000) % 60);
             const s = Math.floor((diff / 1000) % 60);
             document.getElementById('timer').innerHTML = `
-                <div class="box"><span class="num">${d}</span><span class="label">يوم</span></div>
-                <div class="box"><span class="num">${h}</span><span class="label">ساعة</span></div>
-                <div class="box"><span class="num">${m}</span><span class="label">دقيقة</span></div>
-                <div class="box"><span class="num">${s}</span><span class="label">ثانية</span></div>
+                <div class="box"><span class="num">${d}</span> يوم</div>
+                <div class="box"><span class="num">${h}</span> ساعة</div>
+                <div class="box"><span class="num">${m}</span> دقيقة</div>
+                <div class="box"><span class="num">${s}</span> ثانية</div>
             `;
         }
     </script>
