@@ -4,116 +4,166 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>إلى {{ name }} ❤️</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { 
-            margin: 0; padding: 0; background: radial-gradient(circle at center, #1a001a 0%, #050005 100%);
-            color: white; overflow: hidden; font-family: 'Cairo', sans-serif; height: 100vh; width: 100vw; 
+            margin: 0; padding: 0; background: #050005; 
+            color: white; overflow: hidden; font-family: 'Cairo', sans-serif; height: 100vh; 
         }
+
+        /* واجهة البداية */
         #overlay { 
-            position: absolute; inset: 0; background: #050005; z-index: 300; 
+            position: absolute; inset: 0; background: #050005; z-index: 1000; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            cursor: pointer; transition: opacity 1s; 
+            cursor: pointer; transition: 1s; 
         }
-        .heart-btn { font-size: 60px; animation: pulse 1s infinite; filter: drop-shadow(0 0 15px #ff2b6b); }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        #top-container {
-            position: absolute; top: 20px; width: 100%; z-index: 200;
-            text-align: center; opacity: 0; transition: 1.5s; pointer-events: none;
-        }
-        .ecg-svg { width: 85%; height: 60px; stroke: #ff2b6b; stroke-width: 3; fill: none; filter: drop-shadow(0 0 5px #ff2b6b); }
-        .name-title { font-size: 2.5rem; font-weight: 700; color: #ff2b6b; text-shadow: 0 0 20px rgba(255, 43, 107, 1); margin: 5px 0; }
-        .timer { display: flex; gap: 5px; justify-content: center; }
-        .box { background: rgba(255, 43, 107, 0.15); border: 1px solid rgba(255, 43, 107, 0.8); padding: 5px 8px; border-radius: 10px; min-width: 45px; }
-        .num { font-size: 1.1rem; color: #ff2b6b; font-weight: bold; display: block; }
-        canvas { position: absolute; bottom: 0; left: 0; z-index: 10; pointer-events: none; opacity: 0.3; }
+        .heart-main { font-size: 80px; animation: beat 0.8s infinite; filter: drop-shadow(0 0 20px #ff2b6b); }
+        @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+        /* العناصر الحية */
+        #main-content { opacity: 0; transition: 2s; position: relative; z-index: 10; text-align: center; padding-top: 5vh; }
+        
+        /* مخطط النبض المتفاعل */
+        .ecg-container { height: 80px; width: 100%; display: flex; justify-content: center; }
+        .ecg-svg { width: 90%; height: 100%; stroke: #ff2b6b; stroke-width: 4; fill: none; }
+        .pulse-line { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: dash 2s linear infinite; }
+        @keyframes dash { to { stroke-dashoffset: 0; } }
+
+        .name-tag { font-size: 3rem; color: #ff2b6b; text-shadow: 0 0 20px #ff2b6b; margin: 10px 0; font-weight: 700; }
+        
+        .timer { display: flex; gap: 8px; justify-content: center; margin: 20px 0; }
+        .box { background: rgba(255, 43, 107, 0.2); border: 1px solid #ff2b6b; padding: 10px; border-radius: 12px; min-width: 55px; }
+        .num { font-size: 1.4rem; font-weight: 700; display: block; color: #fff; }
+        .label { font-size: 0.7rem; color: #ffb3c1; }
+
+        canvas { position: absolute; inset: 0; pointer-events: none; }
+        #treeCanvas { z-index: 5; opacity: 0.4; }
+        #bgCanvas { z-index: 1; opacity: 0.6; } /* للجزيئات المتطايرة */
     </style>
 </head>
-<body onclick="initExperience()">
+<body onclick="start()">
 
     <div id="overlay">
-        <div class="heart-btn">❤️</div>
-        <p style="color:#ff2b6b; font-weight: bold; margin-top: 10px;">إلمس القلب للصوت</p>
+        <div class="heart-main">❤️</div>
+        <p style="color:#ff2b6b; margin-top: 20px; font-weight: bold;">إلمس القلب لتشغيل النبض</p>
     </div>
 
-    <div id="top-container">
-        <svg class="ecg-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
-            <path d="M0,50 L100,50 L110,40 L120,50 L135,50 L145,10 L160,90 L175,50 L500,50" stroke="#ff2b6b" fill="none" />
-        </svg>
-        <div class="name-title">{{ name }}</div>
+    <div id="main-content">
+        <div class="ecg-container">
+            <svg class="ecg-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
+                <path class="pulse-line" d="M0,50 L150,50 L160,20 L175,80 L190,10 L210,90 L230,50 L500,50" />
+            </svg>
+        </div>
+        <div class="name-tag">{{ name }}</div>
         <div id="timer" class="timer"></div>
+        <p style="font-style: italic; color: #ffb3c1;">كل ثانية وأنتِ النبض...</p>
     </div>
 
+    <canvas id="bgCanvas"></canvas>
     <canvas id="treeCanvas"></canvas>
 
     <script>
-        // تعريف الصوت برمجياً لضمان الدقة
+        let active = false;
+        // حل مشكلة الصوت باستخدام رابط مشفر ومباشر
         const audio = new Audio("https://files.catbox.moe/6gwla0.mpeg");
         audio.loop = true;
-        let active = false;
 
-        function initExperience() {
+        function start() {
             if (active) return;
             active = true;
 
-            // محاولة التشغيل فور الضغط
-            audio.play().then(() => {
-                console.log("الصوت يعمل!");
-            }).catch(err => {
-                // إذا رفض المتصفح، نحاول بطريقة الـ Context
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-                audio.play();
-            });
+            // تشغيل الصوت مع معالجة القيود
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                    audio.muted = true;
+                    audio.play();
+                    setTimeout(() => audio.muted = false, 500);
+                });
+            }
 
             document.getElementById('overlay').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('overlay').style.display = 'none';
-                document.getElementById('top-container').style.opacity = '1';
-                setupTree();
-            }, 800);
-            
-            setInterval(updateTime, 1000);
+                document.getElementById('main-content').style.opacity = '1';
+                initTree();
+                initParticles();
+            }, 1000);
+
+            setInterval(updateTimer, 1000);
         }
 
-        function setupTree() {
+        // --- تأثير الجزيئات المتطايرة (الصفحة النشطة) ---
+        function initParticles() {
+            const canvas = document.getElementById('bgCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            let particles = [];
+
+            for(let i=0; i<50; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 3,
+                    speed: Math.random() * 1 + 0.5
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0,0, canvas.width, canvas.height);
+                ctx.fillStyle = "#ff2b6b";
+                particles.forEach(p => {
+                    p.y -= p.speed;
+                    if(p.y < 0) p.y = canvas.height;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                    ctx.fill();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // --- رسم الشجرة (دالة عباس المطورة) ---
+        function initTree() {
             const canvas = document.getElementById('treeCanvas');
             const ctx = canvas.getContext('2d');
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
 
-            function drawTree(x, y, len, angle, width) {
+            function draw(x, y, len, angle, width) {
                 if (len < 4) return;
                 ctx.beginPath();
                 ctx.strokeStyle = '#ff2b6b';
                 ctx.lineWidth = width;
+                ctx.lineCap = 'round';
                 ctx.moveTo(x, y);
                 const nx = x + Math.sin(angle * Math.PI / 180) * len;
                 const ny = y - Math.cos(angle * Math.PI / 180) * len;
                 ctx.lineTo(nx, ny);
                 ctx.stroke();
+
                 setTimeout(() => {
-                    drawTree(nx, ny, len * 0.78, angle + 25 + Math.random() * 5, width * 0.7);
-                    drawTree(nx, ny, len * 0.78, angle - 25 - Math.random() * 5, width * 0.7);
+                    draw(nx, ny, len * 0.78, angle + 25 + Math.random()*5, width * 0.7);
+                    draw(nx, ny, len * 0.78, angle - 25 - Math.random()*5, width * 0.7);
                 }, 80);
             }
-            drawTree(canvas.width / 2, canvas.height, canvas.height * 0.15, 0, 8);
+            draw(canvas.width/2, canvas.height, canvas.height*0.16, 0, 8);
         }
 
-        function updateTime() {
-            // ملاحظة: تأكد من تمرير التاريخ بشكل صحيح من Flask
-            const diff = new Date() - new Date("{{ date }}");
+        function updateTimer() {
+            const target = new Date("{{ date }}");
+            const diff = new Date() - target;
             const d = Math.floor(diff / 86400000);
             const h = Math.floor((diff / 3600000) % 24);
             const m = Math.floor((diff / 60000) % 60);
             const s = Math.floor((diff / 1000) % 60);
             document.getElementById('timer').innerHTML = `
-                <div class="box"><span class="num">${d}</span> يوم</div>
-                <div class="box"><span class="num">${h}</span> ساعة</div>
-                <div class="box"><span class="num">${m}</span> دقيقة</div>
-                <div class="box"><span class="num">${s}</span> ثانية</div>
+                <div class="box"><span class="num">${d}</span><span class="label">يوم</span></div>
+                <div class="box"><span class="num">${h}</span><span class="label">ساعة</span></div>
+                <div class="box"><span class="num">${m}</span><span class="label">دقيقة</span></div>
+                <div class="box"><span class="num">${s}</span><span class="label">ثانية</span></div>
             `;
         }
     </script>
