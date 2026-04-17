@@ -19,36 +19,40 @@
         .heart-main { font-size: 80px; animation: beat 0.8s infinite; filter: drop-shadow(0 0 20px #ff2b6b); }
         @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
 
-        #main-content { opacity: 0; transition: 2s; position: relative; z-index: 10; text-align: center; padding-top: 5vh; }
+        #main-content { opacity: 0; transition: 1.5s; position: relative; z-index: 10; text-align: center; padding-top: 5vh; }
         
-        /* مخطط نبض أكثر ديناميكية */
-        .ecg-container { height: 100px; width: 100%; display: flex; justify-content: center; margin-bottom: 10px; }
+        /* مخطط نبض متفاعل وسلس */
+        .ecg-container { height: 100px; width: 100%; display: flex; justify-content: center; overflow: hidden; }
         .ecg-svg { width: 90%; height: 100%; stroke: #ff2b6b; stroke-width: 4; fill: none; filter: drop-shadow(0 0 8px #ff2b6b); }
         
         .pulse-line {
             stroke-dasharray: 1000;
             stroke-dashoffset: 1000;
-            animation: dash 2.5s linear infinite;
+            animation: dash 3s linear infinite;
         }
         @keyframes dash { to { stroke-dashoffset: 0; } }
 
-        .name-tag { font-size: 3rem; color: #ff2b6b; text-shadow: 0 0 20px #ff2b6b; margin: 10px 0; font-weight: 700; }
+        .name-tag { font-size: 2.8rem; color: #ff2b6b; text-shadow: 0 0 15px #ff2b6b; margin: 10px 0; font-weight: 700; }
         
         .timer { display: flex; gap: 8px; justify-content: center; margin: 20px 0; }
-        .box { background: rgba(255, 43, 107, 0.15); border: 1px solid #ff2b6b; padding: 10px; border-radius: 12px; min-width: 55px; }
-        .num { font-size: 1.4rem; font-weight: 700; display: block; color: #fff; }
-        .label { font-size: 0.7rem; color: #ffb3c1; }
+        .box { background: rgba(255, 43, 107, 0.1); border: 1px solid rgba(255, 43, 107, 0.6); padding: 10px; border-radius: 12px; min-width: 50px; }
+        .num { font-size: 1.2rem; font-weight: 700; display: block; color: #fff; }
+        .label { font-size: 0.6rem; color: #ffb3c1; }
 
         canvas { position: absolute; inset: 0; pointer-events: none; }
-        #treeCanvas { z-index: 5; opacity: 0.5; }
-        #bgCanvas { z-index: 1; opacity: 0.7; }
+        #treeCanvas { z-index: 5; opacity: 0.4; }
+        #bgCanvas { z-index: 1; opacity: 0.5; }
     </style>
 </head>
 <body onclick="start()">
 
+    <audio id="bgMusic" loop crossorigin="anonymous" preload="auto">
+        <source src="https://files.catbox.moe/6gwla0.mpeg" type="audio/mpeg">
+    </audio>
+
     <div id="overlay">
         <div class="heart-main">❤️</div>
-        <p style="color:#ff2b6b; margin-top: 20px; font-weight: bold;">إلمس القلب لبدء الحكاية</p>
+        <p style="color:#ff2b6b; margin-top: 20px; font-weight: bold;">إلمس القلب يا عبقري</p>
     </div>
 
     <div id="main-content">
@@ -59,7 +63,7 @@
         </div>
         <div class="name-tag">{{ name }}</div>
         <div id="timer" class="timer"></div>
-        <p id="sub-text" style="color: #ffb3c1; font-style: italic;">جاري تحميل اللحن...</p>
+        <p style="color: #ffb3c1; font-style: italic; font-size: 0.9rem;">أنتِ النبض الذي أعيش به...</p>
     </div>
 
     <canvas id="bgCanvas"></canvas>
@@ -67,30 +71,20 @@
 
     <script>
         let active = false;
-        const audio = new Audio();
-        
-        // حل خطأ 416: نقوم بتحويل الرابط لـ Blob لضمان تحميله بالكامل وتجنب طلبات Range
-        fetch("https://files.catbox.moe/6gwla0.mpeg")
-            .then(response => response.blob())
-            .then(blob => {
-                const url = URL.createObjectURL(blob);
-                audio.src = url;
-                audio.loop = true;
-                if(document.getElementById('sub-text')) {
-                    document.getElementById('sub-text').innerText = "كل ثانية وأنتِ النبض...";
-                }
-            })
-            .catch(err => console.error("Audio Load Error:", err));
+        const audio = document.getElementById('bgMusic');
 
         function start() {
             if (active) return;
             active = true;
 
-            // تشغيل الصوت بعد تحميل الـ Blob
-            audio.play().catch(() => {
-                audio.muted = true;
+            // محاولة التشغيل المباشر
+            audio.play().then(() => {
+                console.log("Audio playing...");
+            }).catch(err => {
+                console.log("Autoplay blocked, attempting interaction play");
+                // في حال فشل، نحاول مرة أخرى بعد تفاعل المستخدم
+                audio.muted = false;
                 audio.play();
-                setTimeout(() => audio.muted = false, 500);
             });
 
             document.getElementById('overlay').style.opacity = '0';
@@ -99,35 +93,31 @@
                 document.getElementById('main-content').style.opacity = '1';
                 initTree();
                 initParticles();
-            }, 1000);
+            }, 800);
 
             setInterval(updateTimer, 1000);
         }
 
-        // --- جزيئات متطايرة حيوية ---
         function initParticles() {
             const canvas = document.getElementById('bgCanvas');
             const ctx = canvas.getContext('2d');
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             let particles = [];
-
-            for(let i=0; i<60; i++) {
+            for(let i=0; i<40; i++) {
                 particles.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
-                    size: Math.random() * 2 + 1,
-                    speed: Math.random() * 0.8 + 0.3,
-                    opacity: Math.random()
+                    size: Math.random() * 2,
+                    speed: Math.random() * 0.5 + 0.2
                 });
             }
-
             function animate() {
                 ctx.clearRect(0,0, canvas.width, canvas.height);
+                ctx.fillStyle = "#ff2b6b";
                 particles.forEach(p => {
                     p.y -= p.speed;
                     if(p.y < 0) p.y = canvas.height;
-                    ctx.fillStyle = `rgba(255, 43, 107, ${p.opacity})`;
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
                     ctx.fill();
@@ -137,13 +127,11 @@
             animate();
         }
 
-        // --- الشجرة المتطورة ---
         function initTree() {
             const canvas = document.getElementById('treeCanvas');
             const ctx = canvas.getContext('2d');
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-
             function draw(x, y, len, angle, width) {
                 if (len < 5) return;
                 ctx.beginPath();
@@ -155,13 +143,12 @@
                 const ny = y - Math.cos(angle * Math.PI / 180) * len;
                 ctx.lineTo(nx, ny);
                 ctx.stroke();
-
                 setTimeout(() => {
-                    draw(nx, ny, len * 0.78, angle + 22 + Math.random()*7, width * 0.7);
-                    draw(nx, ny, len * 0.78, angle - 22 - Math.random()*7, width * 0.7);
-                }, 60);
+                    draw(nx, ny, len * 0.78, angle + 22 + Math.random()*5, width * 0.7);
+                    draw(nx, ny, len * 0.78, angle - 22 - Math.random()*5, width * 0.7);
+                }, 70);
             }
-            draw(canvas.width/2, canvas.height, canvas.height*0.17, 0, 7);
+            draw(canvas.width/2, canvas.height, canvas.height*0.16, 0, 7);
         }
 
         function updateTimer() {
